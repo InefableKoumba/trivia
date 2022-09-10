@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
-import '../stylesheets/App.css';
-import Question from './Question';
-import Search from './Search';
-import $ from 'jquery';
+import React, { Component } from "react";
+import "../stylesheets/App.css";
+import Question from "./Question";
+import Search from "./Search";
+import $ from "jquery";
 
 class QuestionView extends Component {
   constructor() {
@@ -22,19 +22,19 @@ class QuestionView extends Component {
 
   getQuestions = () => {
     $.ajax({
-      url: `/questions?page=${this.state.page}`, //TODO: update request URL
-      type: 'GET',
+      url: `http://localhost:5000/api/questions?page=${this.state.page}`, //TODO: update request URL
+      type: "GET",
       success: (result) => {
         this.setState({
           questions: result.questions,
-          totalQuestions: result.total_questions,
+          totalQuestions: result.totalQuestions,
           categories: result.categories,
-          currentCategory: result.current_category,
+          currentCategory: result.currentCategory,
         });
         return;
       },
       error: (error) => {
-        alert('Unable to load questions. Please try your request again');
+        alert("Unable to load questions. Please try your request again");
         return;
       },
     });
@@ -51,7 +51,7 @@ class QuestionView extends Component {
       pageNumbers.push(
         <span
           key={i}
-          className={`page-num ${i === this.state.page ? 'active' : ''}`}
+          className={`page-num ${i === this.state.page ? "active" : ""}`}
           onClick={() => {
             this.selectPage(i);
           }}
@@ -65,18 +65,18 @@ class QuestionView extends Component {
 
   getByCategory = (id) => {
     $.ajax({
-      url: `/categories/${id}/questions`, //TODO: update request URL
-      type: 'GET',
+      url: `http://localhost:5000/api/categories/${id}/questions`, //TODO: update request URL
+      type: "GET",
       success: (result) => {
         this.setState({
           questions: result.questions,
-          totalQuestions: result.total_questions,
-          currentCategory: result.current_category,
+          totalQuestions: result.totalQuestions,
+          currentCategory: result.currentCategory,
         });
         return;
       },
       error: (error) => {
-        alert('Unable to load questions. Please try your request again');
+        alert("Unable to load questions. Please try your request again");
         return;
       },
     });
@@ -84,41 +84,38 @@ class QuestionView extends Component {
 
   submitSearch = (searchTerm) => {
     $.ajax({
-      url: `/questions`, //TODO: update request URL
-      type: 'POST',
-      dataType: 'json',
-      contentType: 'application/json',
+      url: `http://localhost:5000/api/questions/search`, //TODO: update request URL
+      type: "POST",
+      dataType: "json",
+      contentType: "application/json",
       data: JSON.stringify({ searchTerm: searchTerm }),
-      xhrFields: {
-        withCredentials: true,
-      },
       crossDomain: true,
       success: (result) => {
         this.setState({
           questions: result.questions,
-          totalQuestions: result.total_questions,
-          currentCategory: result.current_category,
+          totalQuestions: result.totalQuestions,
+          currentCategory: result.currentCategory,
         });
         return;
       },
       error: (error) => {
-        alert('Unable to load questions. Please try your request again');
+        alert("Unable to load questions. Please try your request again");
         return;
       },
     });
   };
 
   questionAction = (id) => (action) => {
-    if (action === 'DELETE') {
-      if (window.confirm('are you sure you want to delete the question?')) {
+    if (action === "DELETE") {
+      if (window.confirm("are you sure you want to delete the question?")) {
         $.ajax({
           url: `/questions/${id}`, //TODO: update request URL
-          type: 'DELETE',
+          type: "DELETE",
           success: (result) => {
             this.getQuestions();
           },
           error: (error) => {
-            alert('Unable to load questions. Please try your request again');
+            alert("Unable to load questions. Please try your request again");
             return;
           },
         });
@@ -128,8 +125,8 @@ class QuestionView extends Component {
 
   render() {
     return (
-      <div className='question-view'>
-        <div className='categories-list'>
+      <div className="question-view">
+        <div className="categories-list">
           <h2
             onClick={() => {
               this.getQuestions();
@@ -147,7 +144,7 @@ class QuestionView extends Component {
               >
                 {this.state.categories[id]}
                 <img
-                  className='category'
+                  className="category"
                   alt={`${this.state.categories[id].toLowerCase()}`}
                   src={`${this.state.categories[id].toLowerCase()}.svg`}
                 />
@@ -156,7 +153,7 @@ class QuestionView extends Component {
           </ul>
           <Search submitSearch={this.submitSearch} />
         </div>
-        <div className='questions-list'>
+        <div className="questions-list">
           <h2>Questions</h2>
           {this.state.questions.map((q, ind) => (
             <Question
@@ -168,7 +165,7 @@ class QuestionView extends Component {
               questionAction={this.questionAction(q.id)}
             />
           ))}
-          <div className='pagination-menu'>{this.createPagination()}</div>
+          <div className="pagination-menu">{this.createPagination()}</div>
         </div>
       </div>
     );
