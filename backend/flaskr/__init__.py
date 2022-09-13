@@ -96,9 +96,16 @@ def create_app(test_config=None):
 
     @app.route("/api/questions/<question_id>", methods=["DELETE"])
     def delete_question(question_id):
-        question = Question.query.get(question_id)
-        db.session.delete(question)
-        db.session.commit()
+        question = None
+        try:
+            question = Question.query.get(question_id)
+            if question == None:
+                return jsonify({"success": False}), 404
+            db.session.delete(question)
+            db.session.commit()
+        except:
+            return jsonify({"success": False}), 500
+
         return jsonify({"success": True})
 
     """
@@ -113,11 +120,14 @@ def create_app(test_config=None):
     """
     @app.route("/api/questions", methods=["POST"])
     def create_question():
+        data = request.get_json()
+        if not "answer" in data or not "question" in data:
+            return jsonify({"success": False}), 401
         question = Question(
-            question=request.form.get('answer'),
-            answer=request.form.get('answer'),
-            difficulty=request.form.get('difficulty'),
-            category=request.form.get('category')
+            question=data["question"],
+            answer=data["answer"],
+            difficulty=data["difficulty"],
+            category=data["category"]
         )
         db.session.add(question)
         db.session.commit()
@@ -136,6 +146,8 @@ def create_app(test_config=None):
     """
     @app.route("/api/questions/search", methods=["POST"])
     def search_question():
+        if not 'searchTerm' in request.get_json():
+            return jsonify({"success": False}), 401
         results = Question.query.filter(Question.question.ilike(r"%{}%".format(
             request.get_json()['searchTerm']))).all()
         questions = []
@@ -166,6 +178,8 @@ def create_app(test_config=None):
     @app.route("/api/quizzes", methods=["POST"])
     def get_next_question():
         data = request.get_json()
+        if not "quiz_category" in data:
+            return jsonify({"success": False}), 401
         questions = []
         selectedQuestion = None
         previousQuestions = data['previous_questions']
@@ -175,7 +189,7 @@ def create_app(test_config=None):
             questions = Question.query.all()
         else:
             questions = db.session.query(
-                Question).filter_by(category=int(quizCategory["id"])).all()
+                Question).filter_by(category=str(quizCategory["id"])).all()
 
         while True:
             question = random.choice(questions)
@@ -207,8 +221,10 @@ def create_app(test_config=None):
     """
     @app.route("/api/categories/<category_id>/questions")
     def get_questions_by_category(category_id):
-        results = Question.query.filter_by(category=category_id).all()
         currentCategory = Category.query.get(category_id)
+        if not currentCategory:
+            return jsonify({"success": False}), 401
+        results = Question.query.filter_by(category=category_id).all()
         questions = []
         for result in results:
             questions.append({

@@ -31,6 +31,7 @@ class FormView extends Component {
 
   submitQuestion = (event) => {
     event.preventDefault();
+    console.log(this.state.category);
     $.ajax({
       url: "http://localhost:5000/api/questions", //TODO: update request URL
       type: "POST",
@@ -43,7 +44,7 @@ class FormView extends Component {
         category: this.state.category,
       }),
       xhrFields: {
-        withCredentials: true,
+        withCredentials: false,
       },
       crossDomain: true,
       success: (result) => {

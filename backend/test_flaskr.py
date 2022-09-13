@@ -2,9 +2,15 @@ import os
 import unittest
 import json
 from flask_sqlalchemy import SQLAlchemy
-
+from dotenv import load_dotenv
 from flaskr import create_app
 from models import setup_db, Question, Category
+
+load_dotenv()
+
+DB_TEST_NAME = os.environ.get("DB_TEST_NAME")
+DB_TEST_USER = os.environ.get("DB_TEST_USER")
+DB_TEST_PASSWORD = os.environ.get("DB_TEST_PASSWORD")
 
 
 class TriviaTestCase(unittest.TestCase):
@@ -14,12 +20,11 @@ class TriviaTestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app()
         self.client = self.app.test_client
-        self.database_name = "trivia_test"
-        self.database_path = "postgres://{}/{}".format(
-            'localhost:5432', self.database_name)
+        self.database_path = 'postgresql://{}:{}@{}/{}'.format(
+            DB_TEST_USER, DB_TEST_PASSWORD, 'localhost:5432', DB_TEST_NAME)
         setup_db(self.app, self.database_path)
 
-        self.new_question = {"id": 452, "question": "Random question",
+        self.new_question = {"question": "Random question",
                              "answer": "Random answer", "difficulty": 4, "category": 2}
         # binds the app to the current context
         with self.app.app_context():
@@ -42,7 +47,7 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue(data["categories"])
+        self.assertIsNotNone(data["categories"])
 
     def test_get_paginated_questions(self):
         res = self.client().get("/api/questions?page=1")
@@ -63,19 +68,39 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
         self.assertEqual(question, None)
 
+    def test_delete_inexisting_question(self):
+        res = self.client().delete("/api/questions/2475")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404)
+
     def test_create_new_question(self):
-        res = self.client().post("/api/questions", json=self.new_book)
+        res = self.client().post("/api/questions", json=self.new_question)
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
 
-    def test_create_new_question(self):
+    def test_create_new_question_missing_data(self):
+        res = self.client().post("/api/questions",
+                                 json={"question": "Fine ?", "difficulty": 4})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(data["success"], False)
+
+    def test_search_question(self):
         res = self.client().post("/api/questions/search",
                                  json={"searchTerm": "title"})
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
+        self.assertIsNotNone(data["questions"])
+        self.assertIsNotNone(data["totalQuestions"])
+
+    def test_search_question_without_searchTerm(self):
+        res = self.client().post("/api/questions/search", json={})
+        data = json.loads(res.data)
 
     def test_get_next_question(self):
         res = self.client().post("/api/quizzes",
@@ -83,6 +108,14 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
+        self.assertIsNotNone(data['question'])
+
+    def test_get_next_question_missing_category(self):
+        res = self.client().post("/api/quizzes",
+                                 json={"previous_questions": [1, 2]})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 401)
 
     def test_get_questions_by_category(self):
         res = self.client().get("/api/categories/2/questions")
@@ -90,6 +123,10 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertIsNotNone(data["questions"])
+
+    def test_get_questions_by_category_inexisting_category(self):
+        res = self.client().get("/api/categories/24571/questions")
+        self.assertEqual(res.status_code, 401)
 
 
 # Make the tests conveniently executable
